@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import numpy
+import time
 
 import ray
 ray.init()
@@ -317,8 +318,11 @@ def plot(datas):
     print('Avg :', np.mean(datas))
 
 @ray.remote
-def run_episode(env, agent, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state):    
-    for i in range(n_update):
+def run_episode(env, state_dim, action_dim, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state):
+    agent = Agent(state_dim, action_dim, training_mode)
+    agent.load_weights()
+
+    for _ in range(n_update):
         action                      = int(agent.act(state))
         next_state, reward, done, _ = env.step(action)
         
@@ -371,36 +375,33 @@ def main():
     state_dim           = envs[0].observation_space.shape[0]
     action_dim          = envs[0].action_space.n
 
-    agents              = [Agent(state_dim, action_dim, training_mode) for i in range(n_agent)] 
     learner             = Learner(state_dim, action_dim, training_mode, policy_kl_range, policy_params, value_clip, entropy_coef, vf_loss_coef,
                             minibatch, PPO_epochs, gamma, lam, learning_rate)     
     #############################################     
     learner.save_weights()
-    [agent.load_weights() for agent in agents]
-    
-    agent_ids = [ray.put(agent) for agent in agents]
     env_ids = [ray.put(env) for env in envs]
     state_ids = [ray.put(state) for state in states]
 
-    episode_ids = [run_episode.remote(env_ids[i], agent_ids[i], training_mode, render, n_update, i, 0, 0, i, state_ids[i]) for i in range(n_agent)]
+    episode_ids = []
+    for i in range(n_agent):
+        episode_ids.append(run_episode.remote(env_ids[i], state_dim, action_dim, training_mode, render, n_update, i, 0, 0, i, state_ids[i]))
+        time.sleep(0.1)
 
-    for x in range(1, n_episode + 1):
+    for _ in range(1, n_episode + 1):
         ready, not_ready = ray.wait(episode_ids)
         env, agent, i_episode, total_reward, eps_time, tag, cur_state = ray.get(ready)[0]
 
         states, actions, rewards, dones, next_states = agent.get_all()
         learner.save_all(states, actions, rewards, dones, next_states)
 
-        learner.update_ppo()
-        learner.save_weights()
-        agent.load_weights()
-        
-        agent_id = ray.put(agent)
         env_id = ray.put(env)
         state_id = ray.put(cur_state)
 
+        learner.update_ppo()
+        learner.save_weights()
+
         episode_ids = not_ready
-        episode_ids.append(run_episode.remote(env_id, agent_id, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state_id))                        
+        episode_ids.append(run_episode.remote(env_id, state_dim, action_dim, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state_id))                        
 
 if __name__ == '__main__':
     main()
