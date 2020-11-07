@@ -228,6 +228,8 @@ class Learner():
 
         loss = self.get_loss(action_mean, values, old_action_mean, old_values, next_values, actions, rewards, dones)
 
+        # === Do backpropagation ===
+        
         self.actor_optimizer.zero_grad()
         self.critic_optimizer.zero_grad()
 
@@ -235,6 +237,8 @@ class Learner():
 
         self.actor_optimizer.step() 
         self.critic_optimizer.step() 
+
+        # === backpropagation has been finished ===
 
     # Update the model
     def update_ppo(self):        
@@ -258,7 +262,7 @@ class Learner():
         return self.actor.state_dict()
 
     def save_weights(self):
-        torch.save(self.actor.state_dict(), 'weights/agent.pth')
+        torch.save(self.actor.state_dict(), 'agent.pth')
 
 class Agent:  
     def __init__(self, state_dim, action_dim, is_training_mode):
@@ -300,7 +304,7 @@ class Agent:
         self.actor.load_state_dict(weights)
 
     def load_weights(self):
-        self.actor.load_state_dict(torch.load('weights/agent.pth', map_location = self.device))
+        self.actor.load_state_dict(torch.load('agent.pth', map_location = self.device))
 
 def plot(datas):
     print('----------')
@@ -335,7 +339,7 @@ def run_episode(env, agent, training_mode, render, n_update, i_episode, total_re
         if done:
             state   = env.reset()
             i_episode += 1
-            print('Episode {} \t t_reward: {} \t time: {} \t process tag: {} \t'.format(i_episode, total_reward, eps_time, tag))
+            print('Episode {} \t t_reward: {} \t time: {} \t process no: {} \t'.format(i_episode, total_reward, eps_time, tag))
 
             total_reward = 0
             eps_time = 0             
@@ -349,6 +353,7 @@ def main():
     render              = False # If you want to display the image, set this to True. Turn this off if you run this in Google Collab
     n_update            = 1024 # How many episode before you update the Policy. Recommended set to 1024 for Continous
     n_episode           = 100000 # How many episode you want to run
+    n_agent             = 2 # How many agent you want to run asynchronously
 
     policy_kl_range     = 0.03 # Recommended set to 0.03 for Continous
     policy_params       = 5 # Recommended set to 5 for Continous
@@ -360,16 +365,16 @@ def main():
     
     gamma               = 0.99 # Just set to 0.99
     lam                 = 0.95 # Just set to 0.95
-    learning_rate       = 3e-4 # Just set to 0.95
+    learning_rate       = 3e-4 # Just set to 0.95    
     ############################################# 
     env_name            = 'BipedalWalker-v3'
-    envs                = [gym.make(env_name) for i in range(2)]
+    envs                = [gym.make(env_name) for i in range(n_agent)]
     states              = [env.reset() for env in envs]
 
     state_dim           = envs[0].observation_space.shape[0]
     action_dim          = envs[0].action_space.shape[0]
 
-    agents              = [Agent(state_dim, action_dim, training_mode) for i in range(len(envs))] 
+    agents              = [Agent(state_dim, action_dim, training_mode) for i in range(n_agent)] 
     learner             = Learner(state_dim, action_dim, training_mode, policy_kl_range, policy_params, value_clip, entropy_coef, vf_loss_coef,
                             minibatch, PPO_epochs, gamma, lam, learning_rate)     
     #############################################     
@@ -380,7 +385,7 @@ def main():
     env_ids = [ray.put(env) for env in envs]
     state_ids = [ray.put(state) for state in states]
 
-    episode_ids = [run_episode.remote(env_ids[i], agent_ids[i], training_mode, render, n_update, i, 0, 0, i, state_ids[i]) for i in range(len(envs))]
+    episode_ids = [run_episode.remote(env_ids[i], agent_ids[i], training_mode, render, n_update, i, 0, 0, i, state_ids[i]) for i in range(n_agent)]
 
     for x in range(1, n_episode + 1):
         ready, not_ready = ray.wait(episode_ids)
