@@ -1,9 +1,8 @@
-# PPO-RND
+# Asynchronous PPO
 
-Simple code to demonstrate Deep Reinforcement Learning by using Proximal Policy Optimization and Random Network Distillation in Pytorch
+Simple code to demonstrate Distribute Deep Reinforcement Learning by using Asynchronous Proximal Policy Optimization in Pytorch
 
-## Version 2 and Other Progress
-the code follow algorithm in PPO's implementation on OpenAI's baseline and also using newer version of PPO called Truly PPO, which has more sample efficiency and performance than OpenAI's PPO. Currently, I am focused on how to implement this project in more difficult environment (Atari games, MuJoCo, etc).
+The code follow algorithm in PPO's implementation on OpenAI's baseline and also using newer version of PPO called Truly PPO, which has more sample efficiency and performance than OpenAI's PPO. Currently, I am focused on how to implement this project in more difficult environment (Atari games, MuJoCo, etc).
 
 - [x] Use Pytorch and Tensorflow 2
 - [x] Clean up the code
