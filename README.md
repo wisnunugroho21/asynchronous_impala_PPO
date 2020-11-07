@@ -29,7 +29,7 @@ You can use either Pytorch
 Just clone this project into your work folder
 
 ```
-git clone https://github.com/wisnunugroho21/reinforcement_learning_ppo_rnd.git
+git clone https://github.com/wisnunugroho21/asynchronous_PPO.git
 ```
 
 ## Running the project
