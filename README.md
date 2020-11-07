@@ -4,9 +4,10 @@ Simple code to demonstrate Distributed Deep Reinforcement Learning by using Asyn
 
 The code follow algorithm in PPO's implementation on OpenAI's baseline and using newer version of PPO called Truly PPO, which has more sample efficiency and performance than OpenAI's PPO. Currently, I am focused on how to implement this project in more difficult environment (Atari games, MuJoCo, etc).
 
-- [x] Use Pytorch and Tensorflow 2
+- [x] Use Pytorch 
 - [x] Clean up the code
 - [x] Use Truly PPO
+- [ ] Add Tensorflow 2
 - [ ] Add more complex environment
 - [ ] Add more explanation
 
