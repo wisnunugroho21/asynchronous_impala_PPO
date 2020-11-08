@@ -397,7 +397,7 @@ def main():
     episode_ids = []
     for i, runner in enumerate(runners):
         episode_ids.append(runner.run_episode.remote(i, 0, 0))
-        time.sleep(0.2)
+        time.sleep(1)
 
     for _ in range(1, n_episode + 1):
         ready, not_ready = ray.wait(episode_ids)
