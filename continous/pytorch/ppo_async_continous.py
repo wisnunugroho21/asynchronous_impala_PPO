@@ -13,9 +13,9 @@ import numpy as np
 import sys
 import numpy
 import time
+import datetime
 
 import ray
-ray.init()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")  
 dataType = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
@@ -368,7 +368,7 @@ def main():
     ############## Hyperparameters ##############
     training_mode       = True # If you want to train the agent, set this to True. But set this otherwise if you only want to test it
 
-    render              = False # If you want to display the image, set this to True. Turn this off if you run this in Google Collab
+    render              = True # If you want to display the image, set this to True. Turn this off if you run this in Google Collab
     n_update            = 1024 # How many episode before you update the Policy. Recommended set to 1024 for Continous
     n_episode           = 100000 # How many episode you want to run
     n_agent             = 2 # How many agent you want to run asynchronously
@@ -386,8 +386,6 @@ def main():
     learning_rate       = 3e-4 # Just set to 0.95
     #############################################
     env_name            = 'BipedalWalker-v3'
-    runners             = [Runner.remote(env_name, training_mode, render, n_update, i) for i in range(n_agent)]
-
     env                 = gym.make(env_name)
     state_dim           = env.observation_space.shape[0]
     action_dim          = env.action_space.shape[0]
@@ -395,25 +393,37 @@ def main():
     learner             = Learner(state_dim, action_dim, training_mode, policy_kl_range, policy_params, value_clip, entropy_coef, vf_loss_coef,
                             minibatch, PPO_epochs, gamma, lam, learning_rate)     
     #############################################
-    learner.save_weights()
-
-    episode_ids = []
-    for i, runner in enumerate(runners):
-        episode_ids.append(runner.run_episode.remote(i, 0, 0))
-        time.sleep(1)
-
-    for _ in range(1, n_episode + 1):
-        ready, not_ready = ray.wait(episode_ids)
-        trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]
-
-        states, actions, rewards, dones, next_states = trajectory
-        learner.save_all(states, actions, rewards, dones, next_states)
-
-        learner.update_ppo()
+    start = time.time()
+    ray.init()    
+    try:
+        runners = [Runner.remote(env_name, training_mode, render, n_update, i) for i in range(n_agent)]
         learner.save_weights()
 
-        episode_ids = not_ready
-        episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))                
+        episode_ids = []
+        for i, runner in enumerate(runners):
+            episode_ids.append(runner.run_episode.remote(i, 0, 0))
+            time.sleep(4)
+
+        for _ in range(1, n_episode + 1):
+            ready, not_ready = ray.wait(episode_ids)
+            trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]
+
+            states, actions, rewards, dones, next_states = trajectory
+            learner.save_all(states, actions, rewards, dones, next_states)
+
+            learner.update_ppo()
+            learner.save_weights()
+
+            episode_ids = not_ready
+            episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))
+    except KeyboardInterrupt:        
+        print('\nTraining has been Shutdown \n')
+    finally:
+        ray.shutdown()
+
+        finish = time.time()
+        timedelta = finish - start
+        print('Timelength: {}'.format(str( datetime.timedelta(seconds = timedelta) )))
 
 if __name__ == '__main__':
     main()
