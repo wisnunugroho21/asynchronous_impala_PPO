@@ -64,29 +64,26 @@ You can read full detail of Truly PPO in [here](https://arxiv.org/abs/1903.07940
 
 ## Result
 
-### LunarLander using PPO (Non RND)
+### LunarLander
 
 | Result Gif  | Award Progress Graph |
 | ------------- | ------------- |
 | ![Result Gif](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/lunarlander.gif)  | ![Award Progress Graph](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/lunarlander_ppo.png)  |
 
-### Bipedal using PPO (Non RND)
+### Bipedal
 
 | Result Gif    |
 | ------------- |
 | ![Result Gif](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/bipedal.gif) |
 
-### Pendulum using PPO (Non RND)
+### Pendulum
 
 | Result Gif  | Award Progress Graph |
 | ------------- | ------------- |
 | ![Result Gif](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/pendulum.gif)  | ![Award Progress Graph](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/ppo_pendulum_tf2.png)  |
 
-### Pong using PPO (Non RND)
-
-| Result Gif    |
-| ------------- |
-| ![Result Gif](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/pong.gif) |
+## Beware of Memory Leak
+If you using heavy or complex Environment, there is possibility the training process will occours memory leak. I still looking for any solution for this.
 
 ## Contributing
 This project is far from finish and will be improved anytime . Any fix, contribute, or idea would be very appreciated
