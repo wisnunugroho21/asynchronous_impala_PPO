@@ -307,6 +307,50 @@ class Agent:
     def load_weights(self):
         self.actor.load_state_dict(torch.load('agent.pth', map_location = self.device))
 
+@ray.remote
+class Runner():
+    def __init__(self, env_name, training_mode, render, n_update, tag):
+        self.env                 = gym.make(env_name)
+        self.states              = self.env.reset()
+
+        self.state_dim           = self.env.observation_space.shape[0]
+        self.action_dim          = self.env.action_space.shape[0]
+
+        self.agent              = Agent(self.state_dim, self.action_dim, training_mode)
+
+        self.render             = render
+        self.tag                = tag
+        self.training_mode      = training_mode
+        self.n_update           = n_update
+
+    def run_episode(self, i_episode, total_reward, eps_time):
+        self.agent.load_weights()
+
+        for _ in range(self.n_update):
+            action                      = self.agent.act(self.states)
+            next_state, reward, done, _ = self.env.step(action)
+            
+            eps_time        += 1 
+            total_reward    += reward
+            
+            if self.training_mode:
+                self.agent.save_eps(self.states.tolist(), action, reward, float(done), next_state.tolist())
+                
+            self.states = next_state 
+                    
+            if self.render:
+                self.env.render()
+
+            if done:
+                self.states = self.env.reset()
+                i_episode += 1
+                print('Episode {} \t t_reward: {} \t time: {} \t process no: {} \t'.format(i_episode, total_reward, eps_time, self.tag))
+
+                total_reward = 0
+                eps_time = 0             
+        
+        return self.agent.get_all(), i_episode, total_reward, eps_time, self.tag
+
 def plot(datas):
     print('----------')
 
@@ -319,36 +363,6 @@ def plot(datas):
     print('Max :', np.max(datas))
     print('Min :', np.min(datas))
     print('Avg :', np.mean(datas))
-
-@ray.remote
-def run_episode(env, state_dim, action_dim, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state):
-    agent = Agent(state_dim, action_dim, training_mode)
-    agent.load_weights()
-
-    for _ in range(n_update):
-        action                      = agent.act(state)
-        next_state, reward, done, _ = env.step(action)
-        
-        eps_time        += 1 
-        total_reward    += reward
-          
-        if training_mode:
-            agent.save_eps(state.tolist(), action, reward, float(done), next_state.tolist())
-            
-        state   = next_state 
-                
-        if render:
-            env.render()
-
-        if done:
-            state   = env.reset()
-            i_episode += 1
-            print('Episode {} \t t_reward: {} \t time: {} \t process no: {} \t'.format(i_episode, total_reward, eps_time, tag))
-
-            total_reward = 0
-            eps_time = 0             
-    
-    return env, agent, i_episode, total_reward, eps_time, tag, state
 
 def main():
     ############## Hyperparameters ##############
@@ -369,42 +383,37 @@ def main():
     
     gamma               = 0.99 # Just set to 0.99
     lam                 = 0.95 # Just set to 0.95
-    learning_rate       = 3e-4 # Just set to 0.95    
-    ############################################# 
+    learning_rate       = 3e-4 # Just set to 0.95
+    #############################################
     env_name            = 'BipedalWalker-v3'
-    envs                = [gym.make(env_name) for i in range(n_agent)]
-    states              = [env.reset() for env in envs]
+    runners             = [Runner.remote(env_name, training_mode, render, n_update, i) for i in range(n_agent)]
 
-    state_dim           = envs[0].observation_space.shape[0]
-    action_dim          = envs[0].action_space.shape[0]
+    env                 = gym.make(env_name)
+    state_dim           = env.observation_space.shape[0]
+    action_dim          = env.action_space.shape[0]
 
     learner             = Learner(state_dim, action_dim, training_mode, policy_kl_range, policy_params, value_clip, entropy_coef, vf_loss_coef,
                             minibatch, PPO_epochs, gamma, lam, learning_rate)     
-    #############################################     
-    learner.save_weights()    
-    env_ids = [ray.put(env) for env in envs]
-    state_ids = [ray.put(state) for state in states]
+    #############################################
+    learner.save_weights()
 
     episode_ids = []
-    for i in range(n_agent):
-        episode_ids.append(run_episode.remote(env_ids[i], state_dim, action_dim, training_mode, render, n_update, i, 0, 0, i, state_ids[i]))
-        time.sleep(0.2)
+    for i, runner in enumerate(runners):
+        episode_ids.append(runner.run_episode.remote(i, 0, 0))
+        time.sleep(1)
 
     for _ in range(1, n_episode + 1):
         ready, not_ready = ray.wait(episode_ids)
-        env, agent, i_episode, total_reward, eps_time, tag, cur_state = ray.get(ready)[0]
+        trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]
 
-        states, actions, rewards, dones, next_states = agent.get_all()
+        states, actions, rewards, dones, next_states = trajectory
         learner.save_all(states, actions, rewards, dones, next_states)
 
         learner.update_ppo()
         learner.save_weights()
-        
-        env_id = ray.put(env)
-        state_id = ray.put(cur_state)
 
         episode_ids = not_ready
-        episode_ids.append(run_episode.remote(env_id, state_dim, action_dim, training_mode, render, n_update, i_episode, total_reward, eps_time, tag, state_id))                        
+        episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))                
 
 if __name__ == '__main__':
     main()
