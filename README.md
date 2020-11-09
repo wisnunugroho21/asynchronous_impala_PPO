@@ -7,6 +7,7 @@ The code follow algorithm in PPO's implementation on OpenAI's baseline and using
 - [x] Use Pytorch 
 - [x] Clean up the code
 - [x] Use Truly PPO
+- [x] Use IMPALA
 - [ ] Add Tensorflow 2
 - [ ] Add more complex environment
 - [ ] Add more explanation
