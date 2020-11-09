@@ -225,7 +225,6 @@ class Learner():
         Worker_logprobs = self.distributions.logprob(worker_action_means, self.std, actions).detach()        
 
         # Getting general advantages estimator
-        #Advantages      = self.policy_function.generalized_advantage_estimation(values, rewards, next_values, dones)
         Advantages      = self.policy_function.vtrace_generalized_advantage_estimation(values, rewards, next_values, dones, logprobs, Worker_logprobs)
         Returns         = (Advantages + values).detach()
         Advantages      = ((Advantages - Advantages.mean()) / (Advantages.std() + 1e-6)).detach()        
@@ -337,7 +336,6 @@ class Agent:
     def load_weights(self):
         self.actor.load_state_dict(torch.load('agent.pth', map_location = self.device))
 
-
 @ray.remote
 class Runner():
     def __init__(self, env_name, training_mode, render, n_update, tag):
@@ -437,16 +435,16 @@ def main():
 
         for _ in range(1, n_episode + 1):
             ready, not_ready = ray.wait(episode_ids)
-            trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]            
+            trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]
+
+            episode_ids = not_ready
+            episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))          
 
             states, actions, action_means, rewards, dones, next_states = trajectory
             learner.save_all(states, actions, action_means, rewards, dones, next_states)
 
             learner.update_ppo()
             learner.save_weights()
-
-            episode_ids = not_ready
-            episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))           
     except KeyboardInterrupt:        
         print('\nTraining has been Shutdown \n')
     finally:

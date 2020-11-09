@@ -336,7 +336,6 @@ class Agent:
     def load_weights(self):
         self.actor.load_state_dict(torch.load('agent.pth', map_location = self.device))
 
-
 @ray.remote
 class Runner():
     def __init__(self, env_name, training_mode, render, n_update, tag):
