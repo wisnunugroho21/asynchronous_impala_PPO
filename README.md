@@ -1,6 +1,6 @@
 # Asynchronous IMPALA PPO
 
-Simple code to demonstrate Multi-Agent Deep Reinforcement Learning by using Asynchronous-Impala Proximal Policy Optimization in Pytorch
+Simple code to demonstrate Multi-Agent Deep Reinforcement Learning by using Asynchronous & Impala Proximal Policy Optimization in Pytorch
 
 The code follow algorithm in PPO's implementation on OpenAI's baseline and using newer version of PPO called Truly PPO, which has more sample efficiency and performance than OpenAI's PPO. Currently, I am focused on how to implement this project in more difficult environment (Atari games, MuJoCo, etc).
 
