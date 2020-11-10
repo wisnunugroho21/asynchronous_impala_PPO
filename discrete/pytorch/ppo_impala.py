@@ -16,6 +16,7 @@ import time
 import datetime
 
 import ray
+import gc
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")  
 dataType = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
@@ -439,7 +440,9 @@ def main():
             trajectory, i_episode, total_reward, eps_time, tag = ray.get(ready)[0]
 
             episode_ids = not_ready
-            episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))      
+            episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))
+
+            gc.collect()     
 
             states, actions, action_probs, rewards, dones, next_states = trajectory
             learner.save_all(states, actions, action_probs, rewards, dones, next_states)

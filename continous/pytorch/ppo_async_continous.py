@@ -16,6 +16,7 @@ import time
 import datetime
 
 import ray
+import gc
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")  
 dataType = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
@@ -416,6 +417,8 @@ def main():
 
             episode_ids = not_ready
             episode_ids.append(runners[tag].run_episode.remote(i_episode, total_reward, eps_time))
+
+            gc.collect()
     except KeyboardInterrupt:        
         print('\nTraining has been Shutdown \n')
     finally:
