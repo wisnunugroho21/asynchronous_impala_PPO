@@ -244,7 +244,7 @@ class Learner():
         dist_entropy    = self.distributions.entropy(action_mean, self.std).mean()
 
         # Getting critic loss by using Clipped critic value
-        vpredclipped    = old_values + torch.clamp(values - Old_values, -self.value_clip, self.value_clip) # Minimize the difference between old value and new value
+        vpredclipped    = Old_values + torch.clamp(values - Old_values, -self.value_clip, self.value_clip) # Minimize the difference between old value and new value
         vf_losses1      = (Returns - values).pow(2) * 0.5 # Mean Squared Error
         vf_losses2      = (Returns - vpredclipped).pow(2) * 0.5 # Mean Squared Error        
         critic_loss     = torch.max(vf_losses1, vf_losses2).mean()                
