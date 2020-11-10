@@ -4,11 +4,10 @@ Simple code to demonstrate Multi-Agent Deep Reinforcement Learning by using Asyn
 
 The code follow algorithm in PPO's implementation on OpenAI's baseline and using newer version of PPO called Truly PPO, which has more sample efficiency and performance than OpenAI's PPO. Currently, I am focused on how to implement this project in more difficult environment (Atari games, MuJoCo, etc).
 
-- [x] Use Pytorch 
 - [x] Clean up the code
 - [x] Use Truly PPO
 - [x] Use IMPALA
-- [ ] Add Tensorflow 2
+- [ ] Add Tensorflow 2 version
 - [ ] Add more complex environment
 - [ ] Add more explanation
 
@@ -23,7 +22,7 @@ Make sure you have installed Ray and Gym.
 - Click [here](https://gym.openai.com/docs/) to install gym
 - Click [here](https://docs.ray.io/en/latest/) to install ray
 
-You can use either Pytorch
+You can use Pytorch
 - Click [here](https://pytorch.org/get-started/locally/) to install pytorch
 
 ### Installing
@@ -38,10 +37,16 @@ git clone https://github.com/wisnunugroho21/asynchronous_PPO.git
 
 After you clone the project, run following script in cmd/terminal :
 
-#### Pytorch version
+#### Basic Async
 ```
 cd asynchronous_PPO/discrete/pytorch
-python ppo_impala.py
+python3 ppo_sync.py
+```
+
+#### Impala
+```
+cd asynchronous_PPO/discrete/pytorch
+python3 ppo_impala.py
 ```
 
 ## Proximal Policy Optimization
@@ -90,7 +95,7 @@ You can read full detail of Impala in [here](https://arxiv.org/abs/1802.01561)
 | ![Result Gif](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/pendulum.gif)  | ![Award Progress Graph](https://github.com/wisnunugroho21/asynchronous_PPO/blob/master/Result/ppo_pendulum_tf2.png)  |
 
 ## Beware of Memory Leak
-If you using heavy or complex Environment, there is possibility the training process will occours memory leak. I still looking for any solution for this.
+If you using heavy or complex Environment, there is a possibility that the training process will cause a memory leak. I still looking for any solution for this.
 
 ## Contributing
 This project is far from finish and will be improved anytime . Any fix, contribute, or idea would be very appreciated
