@@ -30,7 +30,7 @@ You can use Pytorch
 Just clone this project into your work folder
 
 ```
-git clone https://github.com/wisnunugroho21/asynchronous_PPO.git
+git clone https://github.com/wisnunugroho21/asynchronous_impala_PPO.git
 ```
 
 ## Running the project
