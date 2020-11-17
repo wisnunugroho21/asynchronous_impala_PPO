@@ -39,13 +39,13 @@ After you clone the project, run following script in cmd/terminal :
 
 #### Basic Async
 ```
-cd asynchronous_PPO/discrete/pytorch
+cd asynchronous_impala_PPO/discrete/pytorch
 python3 ppo_sync.py
 ```
 
 #### Impala
 ```
-cd asynchronous_PPO/discrete/pytorch
+cd asynchronous_impala_PPO/discrete/pytorch
 python3 ppo_impala.py
 ```
 
